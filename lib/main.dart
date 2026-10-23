@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'models/book.dart';
 import 'screens/settings_screen.dart';
 import 'services/open_library_service.dart';
+import 'services/favorite_books_service.dart';
 import 'services/preferences_service.dart';
 
 void main() {
@@ -323,6 +324,13 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
       ),
       IconButton(
+        tooltip: 'Buku tersimpan',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const FavoriteBooksScreen()),
+        ),
+        icon: const Icon(Icons.bookmark_outline_rounded),
+      ),
+      IconButton(
         tooltip: 'Pengaturan',
         onPressed: _openSettings,
         icon: const Icon(Icons.tune_rounded),
@@ -527,6 +535,9 @@ class BookDetailScreen extends StatefulWidget {
 
 class _BookDetailScreenState extends State<BookDetailScreen> {
   late final Future<String?> _descriptionFuture;
+  final _favoriteBooks = FavoriteBooksService();
+  bool _isFavorite = false;
+  bool _favoriteLoaded = false;
 
   Book get book => widget.book;
 
@@ -534,6 +545,29 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   void initState() {
     super.initState();
     _descriptionFuture = OpenLibraryService().getWorkDescription(book.key);
+    _loadFavorite();
+  }
+
+  Future<void> _loadFavorite() async {
+    final isFavorite = await _favoriteBooks.contains(book.key);
+    if (!mounted) return;
+    setState(() {
+      _isFavorite = isFavorite;
+      _favoriteLoaded = true;
+    });
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_isFavorite) {
+      await _favoriteBooks.remove(book.key);
+    } else {
+      await _favoriteBooks.save(book);
+    }
+    if (!mounted) return;
+    setState(() => _isFavorite = !_isFavorite);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_isFavorite ? 'Buku disimpan.' : 'Buku dihapus dari tersimpan.')),
+    );
   }
 
   @override
@@ -544,6 +578,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           'Detail buku',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
+        actions: [
+          IconButton(
+            tooltip: _isFavorite ? 'Hapus dari tersimpan' : 'Simpan buku',
+            onPressed: _favoriteLoaded ? _toggleFavorite : null,
+            icon: Icon(_isFavorite ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
@@ -680,6 +721,71 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       );
     }
   }
+}
+
+class FavoriteBooksScreen extends StatefulWidget {
+  const FavoriteBooksScreen({super.key});
+
+  @override
+  State<FavoriteBooksScreen> createState() => _FavoriteBooksScreenState();
+}
+
+class _FavoriteBooksScreenState extends State<FavoriteBooksScreen> {
+  final _service = FavoriteBooksService();
+  late Future<List<Book>> _books;
+
+  @override
+  void initState() {
+    super.initState();
+    _books = _service.getAll();
+  }
+
+  void _reload() => setState(() => _books = _service.getAll());
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Buku tersimpan')),
+    body: FutureBuilder<List<Book>>(
+      future: _books,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return const Center(child: Text('Buku tersimpan belum dapat dimuat.'));
+        }
+        final books = snapshot.data ?? const <Book>[];
+        if (books.isEmpty) {
+          return const Center(child: Text('Belum ada buku tersimpan.'));
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: books.length,
+          itemBuilder: (context, index) {
+            final book = books[index];
+            return Card(
+              child: ListTile(
+                leading: SizedBox(width: 42, child: BookCover(book: book, size: 'S')),
+                title: Text(book.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                subtitle: Text(book.authorLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => BookDetailScreen(book: book)),
+                ).then((_) => _reload()),
+                trailing: IconButton(
+                  tooltip: 'Hapus dari tersimpan',
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  onPressed: () async {
+                    await _service.remove(book.key);
+                    _reload();
+                  },
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ),
+  );
 }
 
 class _InfoTile extends StatelessWidget {

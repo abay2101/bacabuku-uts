@@ -9,6 +9,7 @@ Aplikasi katalog buku Flutter untuk mencari dan menjelajahi informasi buku dari 
 - Melihat hasil pencarian dalam kartu dengan sampul, penulis, dan tahun terbit pertama.
 - Membuka halaman detail untuk melihat overview (jika tersedia), tahun terbit, dan jumlah edisi.
 - Membuka rekaman buku di situs Open Library.
+- Menyimpan dan menghapus buku favorit secara lokal dengan SQLite.
 - Menyimpan nama panggilan dan pilihan tema terang/gelap secara lokal dengan SharedPreferences.
 - Menampilkan keadaan loading, hasil kosong, dan pesan error beserta aksi coba lagi.
 
@@ -18,6 +19,7 @@ Aplikasi katalog buku Flutter untuk mencari dan menjelajahi informasi buku dari 
 - [`http`](https://pub.dev/packages/http) untuk permintaan HTTP ke Search API.
 - [`url_launcher`](https://pub.dev/packages/url_launcher) untuk membuka rekaman buku di browser.
 - [`shared_preferences`](https://pub.dev/packages/shared_preferences) untuk menyimpan nama panggilan dan tema pilihan.
+- [`sqflite`](https://pub.dev/packages/sqflite) untuk menyimpan daftar buku favorit di SQLite.
 - Open Library Search API dan Covers API.
 - Open Library Work API untuk mengambil ringkasan pada halaman detail.
 
@@ -30,6 +32,7 @@ Aplikasi katalog buku Flutter untuk mencari dan menjelajahi informasi buku dari 
 
 Aplikasi memerlukan koneksi internet. Android menggunakan izin `INTERNET` untuk mengambil data dan sampul dari Open Library.
 Filter kategori memakai query `subject_key` yang didukung Open Library Search API. Nama panggilan dan pilihan tema hanya disimpan di perangkat, tanpa akun.
+Daftar buku tersimpan juga berada di basis data lokal perangkat dan dapat dikelola dari tombol bookmark pada detail buku.
 
 ## Sumber data
 

@@ -39,6 +39,27 @@ class Book {
     );
   }
 
+  Map<String, Object?> toDatabaseMap() => {
+    'key': key,
+    'title': title,
+    'author_names': authorNames.join('|'),
+    'first_publish_year': firstPublishYear,
+    'cover_id': coverId,
+    'edition_count': editionCount,
+  };
+
+  factory Book.fromDatabaseMap(Map<String, Object?> row) => Book(
+    key: row['key'] as String,
+    title: row['title'] as String,
+    authorNames: (row['author_names'] as String)
+        .split('|')
+        .where((name) => name.isNotEmpty)
+        .toList(growable: false),
+    firstPublishYear: row['first_publish_year'] as int?,
+    coverId: row['cover_id'] as int?,
+    editionCount: row['edition_count'] as int?,
+  );
+
   static int? _asInt(dynamic value) {
     if (value is int) return value;
     if (value is num) return value.toInt();
